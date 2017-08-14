@@ -56,7 +56,7 @@ namespace ExerciseMondayServer
                 }
             }
         }
-        [SecurityPermissionAttribute(SecurityAction.Demand, ControlThread = true)]
+
         private static void HandleClient(Client TCPClient)
         {
             StreamReader sr = new StreamReader(TCPClient.client.GetStream());
@@ -83,12 +83,17 @@ namespace ExerciseMondayServer
                     {
                         Console.WriteLine("Connection Closed");
                         TCPClient.client.Close();
-                        
+                        Thread.CurrentThread.Abort();
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(" >> " + ex.ToString());
+                    if(!(ex is ThreadAbortException))
+                    {
+                        Console.WriteLine(" >> " + ex.ToString());
+                        TCPClient.client.Close();
+                        Thread.CurrentThread.Abort();
+                    }
                 }
 
             }

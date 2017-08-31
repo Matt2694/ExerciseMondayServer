@@ -19,7 +19,14 @@ namespace ExerciseMondayServer
         private static StreamWriter writer = null;
         private static List<Task> clientTasks = new List<Task>();
         private static List<string> messages = new List<string>();
+
         static void Main(string[] args)
+        {
+            Program p = new Program();
+            p.Run();
+        }
+
+        private void Run()
         {
             try
             {
@@ -62,52 +69,85 @@ namespace ExerciseMondayServer
             StreamReader sr = new StreamReader(TCPClient.client.GetStream());
             StreamWriter sw = new StreamWriter(TCPClient.client.GetStream());
             sw.AutoFlush = true;
+            sw.WriteLine("Guess a number between 1 and 10.");
+            int count;
+            bool outer = true;
+            bool inner;
 
-            while (true)
+            while (outer)
             {
-                try
+                count = 0;
+                inner = true;
+                Random random = new Random();
+                int randomNumber = random.Next(1, 11);
+                while (inner)
                 {
-                    string stringRequest = sr.ReadLine();
-                    string[] strArr = stringRequest.Split(' ');
-                    if (strArr[0] == "add")
+                    count++;
+                    try
                     {
-                        sw.WriteLine("sum " + Addition(strArr[1], strArr[2]));
-                        sw.Flush();
+                        string stringRequest = sr.ReadLine();
+                        bool parse = int.TryParse(stringRequest, out int number);
+                        if (parse)
+                        {
+                            if (number == randomNumber)
+                            {
+                                sw.WriteLine("Great, just {0} guess(es)", count);
+                                inner = false;
+                            }
+                            else if (number != randomNumber && count < 10)
+                            {
+                                sw.WriteLine("Wrong answer, {0} tries left", 10 - count);
+                            }
+                            else
+                            {
+                                sw.WriteLine("You didn't manage to guess the right number");
+                                inner = false;
+                            }
+                        }
+                        else
+                        {
+                            if (stringRequest == "exit")
+                            {
+                                TCPClient.client.Close();
+                                Thread.CurrentThread.Abort();
+                            }
+                            else
+                            {
+                                sw.WriteLine("Invalid command, exiting program.");
+                                throw new Exception();
+                            }
+                        }
                     }
-                    else if (strArr[0] == "sub")
+                    catch (Exception ex)
                     {
-                        sw.WriteLine("difference " + Subtract(strArr[1], strArr[2]));
-                        sw.Flush();
-                    }
-                    else if (strArr[0] == "exit")
-                    {
-                        Console.WriteLine("Connection Closed");
-                        TCPClient.client.Close();
-                        Thread.CurrentThread.Abort();
+                        if (!(ex is ThreadAbortException))
+                        {
+                            Console.WriteLine(" >> " + ex.ToString());
+                            TCPClient.client.Close();
+                            Thread.CurrentThread.Abort();
+                        }
                     }
                 }
-                catch (Exception ex)
+                sw.WriteLine("Would you like to playy again? y or n");
+                string response = sr.ReadLine();
+                if (response.Equals("n"))
                 {
-                    if(!(ex is ThreadAbortException))
-                    {
-                        Console.WriteLine(" >> " + ex.ToString());
-                        TCPClient.client.Close();
-                        Thread.CurrentThread.Abort();
-                    }
+                    outer = false;
                 }
-
             }
+            TCPClient.client.Close();
+            Thread.CurrentThread.Abort();
         }
 
-        public static int Addition(string num1, string num2)
-        {
-            return int.Parse(num1) + int.Parse(num2);
-        }
+        //public static int Addition(string num1, string num2)
+        //{
+        //    return int.Parse(num1) + int.Parse(num2);
+        //}
 
-        public static int Subtract(string num1, string num2)
-        {
-            return int.Parse(num1) - int.Parse(num2);
-        }
+        //public static int Subtract(string num1, string num2)
+        //{
+        //    return int.Parse(num1) - int.Parse(num2);
+        //}
 
         
     }
